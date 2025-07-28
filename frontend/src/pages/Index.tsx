@@ -14,6 +14,8 @@ import { GraphCanvas } from '@/components/GraphCanvas';
 import { ControlPanel } from '@/components/ControlPanel';
 import { StatusPanel } from '@/components/StatusPanel';
 import { NodeContextMenu } from '@/components/NodeContextMenu';
+import { GraphInputPanel } from '@/components/GraphInputPanel';
+import { GraphExamples } from '@/components/GraphExamples';
 import { useGraphTraversal } from '@/hooks/useGraphTraversal';
 import { toast } from 'sonner';
 
@@ -222,14 +224,38 @@ const Index = () => {
     toast.success('Graph reset to initial state');
   }, [resetTraversal, setNodes, setEdges, nodes, edges]);
 
+  const generateNodeId = (index: number): string => {
+    if (index < 26) return String.fromCharCode(65 + index);
+    if (index < 702) {
+      const first = Math.floor((index - 26) / 26);
+      const second = (index - 26) % 26;
+      return String.fromCharCode(65 + first) + String.fromCharCode(65 + second);
+    }
+    const first = Math.floor((index - 702) / 676);
+    const remaining = (index - 702) % 676;
+    const second = Math.floor(remaining / 26);
+    const third = remaining % 26;
+    return String.fromCharCode(65 + first) + String.fromCharCode(65 + second) + String.fromCharCode(65 + third);
+  };
+
   const handleAddNode = useCallback(() => {
-    const nodeId = String.fromCharCode(65 + nodes.length); // A, B, C, D...
+    const nodeId = generateNodeId(nodes.length);
+    
+    // Dynamic spacing based on number of nodes
+    const totalNodes = nodes.length + 1;
+    const maxCols = Math.min(6, Math.ceil(Math.sqrt(totalNodes * 1.5)));
+    const spacing = Math.max(120, 600 / maxCols);
+    
+    const index = nodes.length;
+    const row = Math.floor(index / maxCols);
+    const col = index % maxCols;
+    
     const newNode = {
       id: nodeId,
       type: 'graphNode',
       position: { 
-        x: Math.random() * 400 + 100, 
-        y: Math.random() * 300 + 100 
+        x: 100 + col * spacing, 
+        y: 100 + row * (spacing * 0.8) 
       },
       data: { label: nodeId },
     };
@@ -237,6 +263,20 @@ const Index = () => {
     setNodes((nds) => nds.concat(newNode));
     toast.success('Node ' + nodeId + ' added!');
   }, [nodes.length, setNodes]);
+
+  const handleGraphGenerated = useCallback((newNodes: Node[], newEdges: Edge[]) => {
+    // Save current state to undo stack before change
+    setUndoStack((stack) => [...stack, { nodes: [...nodes], edges: [...edges] }]);
+    setRedoStack([]); // Clear redo stack on new action
+    
+    setNodes(newNodes);
+    setEdges(newEdges);
+    
+    // Set start node to first node if available
+    if (newNodes.length > 0) {
+      setStartNode(newNodes[0].id);
+    }
+  }, [nodes, edges, setNodes, setEdges]);
 
   const availableNodes = nodes.map(node => node.id);
 
@@ -252,7 +292,24 @@ const Index = () => {
           </p>
         </header>
 
-        <div className="flex flex-col gap-6 h-[calc(100vh-200px)] lg:grid lg:grid-cols-4">
+        {/* Graph Input Methods - Top Section */}
+        <div className="mb-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3">
+            <GraphInputPanel 
+              onGraphGenerated={handleGraphGenerated}
+              disabled={isRunning}
+            />
+          </div>
+          <div className="lg:col-span-1">
+            <GraphExamples 
+              onLoadExample={handleGraphGenerated}
+              disabled={isRunning}
+            />
+          </div>
+        </div>
+
+        {/* Main Graph Interface */}
+        <div className="flex flex-col gap-6 lg:grid lg:grid-cols-4">
           {/* Graph Controls for small devices */}
           <div className="order-1 lg:hidden">
             <ControlPanel
@@ -274,6 +331,8 @@ const Index = () => {
               availableNodes={availableNodes}
               disabled={isRunning}
               renderGraphControlsOnly={true}
+              nodes={nodes}
+              edges={edges}
             />
           </div>
 
@@ -293,7 +352,7 @@ const Index = () => {
             />
           </div>
 
-          {/* Rest of Control Panel for small devices and full Control Panel for large devices */}
+          {/* Control Panel */}
           <div className="order-3 lg:order-none lg:col-span-1">
             <ControlPanel
               algorithm={algorithm}
@@ -314,6 +373,8 @@ const Index = () => {
               availableNodes={availableNodes}
               disabled={isRunning}
               renderGraphControlsOnly={false}
+              nodes={nodes}
+              edges={edges}
             />
           </div>
 

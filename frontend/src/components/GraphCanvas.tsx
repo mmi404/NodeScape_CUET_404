@@ -76,8 +76,15 @@ export const GraphCanvas = ({
     onNodeClick(node.id);
   }, [onNodeClick]);
 
+  const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
+    event.preventDefault();
+    if (onContextMenu) {
+      onContextMenu(event, node.id);
+    }
+  }, [onContextMenu]);
+
   return (
-    <div className="w-full bg-card rounded-lg border border-border overflow-hidden relative pt-12 sm:pt-0" style={{ height: '70vh', minHeight: '400px' }}>
+    <div className="w-full bg-card rounded-lg border border-border overflow-hidden" style={{ height: '70vh', minHeight: '500px' }}>
       <ReactFlow
         nodes={styledNodes}
         edges={styledEdges}
@@ -85,10 +92,10 @@ export const GraphCanvas = ({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={handleNodeClick}
+        onNodeContextMenu={handleNodeContextMenu}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
-        attributionPosition="top-right"
         proOptions={{ hideAttribution: true }}
         style={{ background: 'hsl(var(--card))', width: '100%', height: '100%' }}
         zoomOnScroll={true}
@@ -96,35 +103,11 @@ export const GraphCanvas = ({
         zoomOnPinch={true}
         zoomOnDoubleClick={true}
         panOnScroll={false}
-        ref={reactFlowWrapperRef}
       >
-        <Controls 
-          className="bg-card border border-border rounded-lg absolute top-0 left-1/2 transform -translate-x-1/2 z-10 sm:static sm:transform-none"
-          showInteractive={false}
-        />
-        {styledNodes.map((node) => {
-          const NodeComponent = nodeTypes[node.type || 'graphNode'] || GraphNode;
-          return (
-            <NodeComponent
-              key={node.id}
-              id={node.id}
-              data={node.data}
-              selected={node.selected}
-              onContextMenu={onContextMenu}
-            />
-          );
-        })}
         <Background 
           color="hsl(var(--border))" 
           gap={20} 
           size={1}
-        />
-        <MiniMap 
-          className="bg-card border border-border rounded-lg"
-          nodeColor="hsl(var(--node-default))"
-          nodeStrokeWidth={2}
-          pannable
-          zoomable
         />
       </ReactFlow>
     </div>
