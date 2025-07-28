@@ -28,3 +28,4 @@ jobs:
           context: ./frontend
           push: true
           tags: mmi404/nodescape_cuet_404:latest
+          platforms: linux/amd64,linux/arm64
