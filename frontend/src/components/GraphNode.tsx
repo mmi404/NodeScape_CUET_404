@@ -34,7 +34,7 @@ export const GraphNode = memo(({ data, selected, onContextMenu }: GraphNodeProps
   const handleContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
     event.preventDefault();
     if (onContextMenu) {
-      onContextMenu(event, data.id);
+      onContextMenu(event, (data as { id: string }).id);
     }
   };
 
@@ -76,7 +76,7 @@ export const GraphNode = memo(({ data, selected, onContextMenu }: GraphNodeProps
         className="w-2 h-2 bg-accent border-0"
       />
       
-      <span className="z-10">{nodeData.label}</span>
+      <span className="z-10">{String(nodeData.label)}</span>
     </motion.div>
   );
 });

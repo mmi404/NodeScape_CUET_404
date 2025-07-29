@@ -8,9 +8,10 @@ import { toast } from 'sonner';
 interface EdgeListInputProps {
   onGraphGenerated: (nodes: Node[], edges: Edge[]) => void;
   disabled?: boolean;
+  isDirected?: boolean;
 }
 
-export const EdgeListInput = ({ onGraphGenerated, disabled = false }: EdgeListInputProps) => {
+export const EdgeListInput = ({ onGraphGenerated, disabled = false, isDirected = true }: EdgeListInputProps) => {
   const [edgeList, setEdgeList] = useState('A B\nB C\nC D\nD A');
 
   const generateGraph = () => {
@@ -40,7 +41,8 @@ export const EdgeListInput = ({ onGraphGenerated, disabled = false }: EdgeListIn
           id: `${source}-${target}`,
           source,
           target,
-          type: 'graphEdge'
+          type: 'graphEdge',
+          data: { isDirected }
         });
       }
 

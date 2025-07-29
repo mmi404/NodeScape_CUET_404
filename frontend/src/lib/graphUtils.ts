@@ -14,9 +14,9 @@ export interface GraphExport {
   }>;
 }
 
-export const exportGraphToJson = (nodes: Node[], edges: Edge[]): string => {
+export const exportGraphToJson = (nodes: Node[], edges: Edge[], isDirected: boolean = false): string => {
   const exportData: GraphExport = {
-    directed: false,
+    directed: isDirected,
     nodes: nodes.map(node => ({
       id: node.id,
       label: node.data.label || node.id,
@@ -36,7 +36,7 @@ export const exportGraphToEdgeList = (edges: Edge[]): string => {
   return edges.map(edge => `${edge.source} ${edge.target}`).join('\n');
 };
 
-export const exportGraphToAdjacencyList = (nodes: Node[], edges: Edge[]): string => {
+export const exportGraphToAdjacencyList = (nodes: Node[], edges: Edge[], isDirected: boolean = false): string => {
   const adjacencyMap = new Map<string, string[]>();
   
   // Initialize all nodes
@@ -49,6 +49,13 @@ export const exportGraphToAdjacencyList = (nodes: Node[], edges: Edge[]): string
     const neighbors = adjacencyMap.get(edge.source) || [];
     neighbors.push(edge.target);
     adjacencyMap.set(edge.source, neighbors);
+    
+    // For undirected graphs, add reverse edge
+    if (!isDirected && !(edge.data?.isDirected ?? false)) {
+      const reverseNeighbors = adjacencyMap.get(edge.target) || [];
+      reverseNeighbors.push(edge.source);
+      adjacencyMap.set(edge.target, reverseNeighbors);
+    }
   });
   
   // Format as adjacency list

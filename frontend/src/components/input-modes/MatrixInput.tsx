@@ -8,9 +8,10 @@ import { toast } from 'sonner';
 interface MatrixInputProps {
   onGraphGenerated: (nodes: Node[], edges: Edge[]) => void;
   disabled?: boolean;
+  isDirected?: boolean;
 }
 
-export const MatrixInput = ({ onGraphGenerated, disabled = false }: MatrixInputProps) => {
+export const MatrixInput = ({ onGraphGenerated, disabled = false, isDirected = true }: MatrixInputProps) => {
   const [size, setSize] = useState(3);
   const [matrix, setMatrix] = useState<number[][]>(
     Array(3).fill(null).map(() => Array(3).fill(0))
@@ -64,7 +65,8 @@ export const MatrixInput = ({ onGraphGenerated, disabled = false }: MatrixInputP
               id: `${sourceId}-${targetId}`,
               source: sourceId,
               target: targetId,
-              type: 'graphEdge'
+              type: 'graphEdge',
+              data: { isDirected }
             });
           }
         }

@@ -9,9 +9,10 @@ import { Upload, FileText } from 'lucide-react';
 interface FileUploadInputProps {
   onGraphGenerated: (nodes: Node[], edges: Edge[]) => void;
   disabled?: boolean;
+  isDirected?: boolean;
 }
 
-export const FileUploadInput = ({ onGraphGenerated, disabled = false }: FileUploadInputProps) => {
+export const FileUploadInput = ({ onGraphGenerated, disabled = false, isDirected = true }: FileUploadInputProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -69,7 +70,8 @@ export const FileUploadInput = ({ onGraphGenerated, disabled = false }: FileUplo
         id: `${source}-${target}`,
         source,
         target,
-        type: 'graphEdge'
+        type: 'graphEdge',
+        data: { isDirected: data.directed ?? isDirected }
       };
     });
 
@@ -107,7 +109,8 @@ export const FileUploadInput = ({ onGraphGenerated, disabled = false }: FileUplo
         id: `${source}-${target}`,
         source,
         target,
-        type: 'graphEdge'
+        type: 'graphEdge',
+        data: { isDirected }
       });
     }
 
@@ -145,7 +148,8 @@ export const FileUploadInput = ({ onGraphGenerated, disabled = false }: FileUplo
             id: `${source}-${target}`,
             source,
             target,
-            type: 'graphEdge'
+            type: 'graphEdge',
+            data: { isDirected }
           });
         }
       }

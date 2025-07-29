@@ -7,13 +7,15 @@ import { EdgeListInput } from './input-modes/EdgeListInput';
 import { AdjacencyListInput } from './input-modes/AdjacencyListInput';
 import { JsonInput } from './input-modes/JsonInput';
 import { FileUploadInput } from './input-modes/FileUploadInput';
+import { TextToGraphInput } from './input-modes/TextToGraphInput';
 
 interface GraphInputPanelProps {
   onGraphGenerated: (nodes: Node[], edges: Edge[]) => void;
   disabled?: boolean;
+  isDirected?: boolean;
 }
 
-export const GraphInputPanel = ({ onGraphGenerated, disabled = false }: GraphInputPanelProps) => {
+export const GraphInputPanel = ({ onGraphGenerated, disabled = false, isDirected = true }: GraphInputPanelProps) => {
   const [activeTab, setActiveTab] = useState('drag-drop');
 
   return (
@@ -24,8 +26,9 @@ export const GraphInputPanel = ({ onGraphGenerated, disabled = false }: GraphInp
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="w-full overflow-x-auto">
-            <TabsList className="grid grid-cols-6 min-w-max w-full">
+            <TabsList className="grid grid-cols-7 min-w-max w-full">
               <TabsTrigger value="drag-drop" className="text-xs px-2 py-1 whitespace-nowrap">Drag & Drop</TabsTrigger>
+              <TabsTrigger value="text-to-graph" className="text-xs px-2 py-1 whitespace-nowrap">Text to Graph</TabsTrigger>
               <TabsTrigger value="matrix" className="text-xs px-2 py-1 whitespace-nowrap">Matrix</TabsTrigger>
               <TabsTrigger value="edge-list" className="text-xs px-2 py-1 whitespace-nowrap">Edge List</TabsTrigger>
               <TabsTrigger value="adj-list" className="text-xs px-2 py-1 whitespace-nowrap">Adj List</TabsTrigger>
@@ -43,23 +46,27 @@ export const GraphInputPanel = ({ onGraphGenerated, disabled = false }: GraphInp
           </TabsContent>
 
           <TabsContent value="matrix" className="mt-4">
-            <MatrixInput onGraphGenerated={onGraphGenerated} disabled={disabled} />
+            <MatrixInput onGraphGenerated={onGraphGenerated} disabled={disabled} isDirected={isDirected} />
           </TabsContent>
 
           <TabsContent value="edge-list" className="mt-4">
-            <EdgeListInput onGraphGenerated={onGraphGenerated} disabled={disabled} />
+            <EdgeListInput onGraphGenerated={onGraphGenerated} disabled={disabled} isDirected={isDirected} />
           </TabsContent>
 
           <TabsContent value="adj-list" className="mt-4">
-            <AdjacencyListInput onGraphGenerated={onGraphGenerated} disabled={disabled} />
+            <AdjacencyListInput onGraphGenerated={onGraphGenerated} disabled={disabled} isDirected={isDirected} />
           </TabsContent>
 
           <TabsContent value="json" className="mt-4">
-            <JsonInput onGraphGenerated={onGraphGenerated} disabled={disabled} />
+            <JsonInput onGraphGenerated={onGraphGenerated} disabled={disabled} isDirected={isDirected} />
           </TabsContent>
 
           <TabsContent value="upload" className="mt-4">
-            <FileUploadInput onGraphGenerated={onGraphGenerated} disabled={disabled} />
+            <FileUploadInput onGraphGenerated={onGraphGenerated} disabled={disabled} isDirected={isDirected} />
+          </TabsContent>
+
+          <TabsContent value="text-to-graph" className="mt-4">
+            <TextToGraphInput onGraphGenerated={onGraphGenerated} disabled={disabled} isDirected={isDirected} />
           </TabsContent>
         </Tabs>
       </CardContent>

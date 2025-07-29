@@ -4,13 +4,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Play, Pause, Square, RotateCcw, Plus, RotateCw, RotateCcw as RotateCounterClockwise, Download } from 'lucide-react';
+import { Play, Pause, Square, RotateCcw, Plus, RotateCw, RotateCcw as RotateCounterClockwise, Download, Brain } from 'lucide-react';
 import { Node, Edge } from '@xyflow/react';
 import { exportGraphToJson, exportGraphToEdgeList, exportGraphToAdjacencyList, downloadFile } from '@/lib/graphUtils';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
 import { toast } from 'sonner';
+import GraphClassificationModal from './GraphClassificationModal';
+import { useState } from 'react';
 
 interface ControlPanelProps {
   algorithm: 'BFS' | 'DFS';
@@ -33,6 +36,9 @@ interface ControlPanelProps {
   renderGraphControlsOnly?: boolean;
   nodes?: Node[];
   edges?: Edge[];
+  onClassificationResult?: (result: any) => void;
+  isDirected?: boolean;
+  onDirectedChange?: (directed: boolean) => void;
 }
 
 export const ControlPanel = ({
@@ -56,7 +62,51 @@ export const ControlPanel = ({
   renderGraphControlsOnly = false,
   nodes = [],
   edges = [],
+  onClassificationResult,
+  isDirected = true,
+  onDirectedChange,
 }: ControlPanelProps) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalClassification, setModalClassification] = useState<any>(null);
+  const classifyGraph = async () => {
+    if (edges.length === 0) {
+      toast.error('No edges to classify');
+      return;
+    }
+    const formattedEdges = edges.map((e) => [e.source, e.target]);
+    try {
+      const res = await fetch("http://localhost:5000/classify-graph", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ edges: formattedEdges }),
+      });
+      const data = await res.json();
+      if (data.prediction !== undefined) {
+        const labels = ["Tree", "Cyclic", "DAG"];
+        toast.success(`Graph classified as: ${labels[data.prediction]} (${(data.confidence * 100).toFixed(1)}% confidence)`);
+        
+        // Store classification result and open modal
+        const classificationResult = {
+          prediction: data.prediction,
+          confidence: data.confidence,
+          features: data.features
+        };
+        
+        setModalClassification(classificationResult);
+        setIsModalOpen(true);
+        
+        // Pass classification result to parent component
+        if (onClassificationResult) {
+          onClassificationResult(classificationResult);
+        }
+      } else {
+        toast.error(data.error || "Error classifying graph");
+      }
+    } catch (error) {
+      toast.error("Error classifying graph");
+    }
+  };
+
   const handleExport = (format: 'json' | 'edgeList' | 'adjList' | 'pdf') => {
     if (nodes.length === 0) {
       return;
@@ -73,7 +123,7 @@ export const ControlPanel = ({
 
     switch (format) {
       case 'json':
-        content = exportGraphToJson(nodes, edges);
+        content = exportGraphToJson(nodes, edges, isDirected);
         filename = 'graph.json';
         mimeType = 'application/json';
         break;
@@ -83,7 +133,7 @@ export const ControlPanel = ({
         mimeType = 'text/plain';
         break;
       case 'adjList':
-        content = exportGraphToAdjacencyList(nodes, edges);
+        content = exportGraphToAdjacencyList(nodes, edges, isDirected);
         filename = 'graph_adjacency.txt';
         mimeType = 'text/plain';
         break;
@@ -99,7 +149,10 @@ export const ControlPanel = ({
     nodes.forEach(node => adjacencyList[node.id] = []);
     edges.forEach(edge => {
       adjacencyList[edge.source].push(edge.target);
-      adjacencyList[edge.target].push(edge.source);
+      // For undirected graphs, add reverse edge
+      if (!isDirected && !(edge.data?.isDirected ?? false)) {
+        adjacencyList[edge.target].push(edge.source);
+      }
     });
 
     if (algorithm === 'BFS') {
@@ -207,6 +260,7 @@ export const ControlPanel = ({
       toast.error('Failed to export PDF');
     }
   };
+
   return (
     <div className="space-y-4">
       <Card className="bg-gradient-card border-border">
@@ -222,6 +276,30 @@ export const ControlPanel = ({
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Node
+          </Button>
+
+          <div className="flex items-center justify-between p-3 bg-muted rounded border">
+            <Label htmlFor="graph-type" className="text-sm font-medium">Graph Type:</Label>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Undirected</span>
+              <Switch
+                id="graph-type"
+                checked={isDirected}
+                onCheckedChange={onDirectedChange}
+                disabled={disabled}
+              />
+              <span className="text-xs text-muted-foreground">Directed</span>
+            </div>
+          </div>
+
+          <Button
+            onClick={classifyGraph}
+            variant="outline"
+            className="w-full border-2 border-purple-500 text-purple-700 hover:bg-purple-500 hover:text-white font-semibold shadow-md transition-all duration-200 hover:shadow-lg"
+            disabled={disabled || edges.length === 0}
+          >
+            <Brain className="w-4 h-4 mr-2" />
+            Classify Graph (AI)
           </Button>
 
           <div className="flex gap-2">
@@ -386,6 +464,14 @@ export const ControlPanel = ({
           </Card>
         </>
       )}
+      
+      <GraphClassificationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        nodes={nodes}
+        edges={edges}
+        classification={modalClassification}
+      />
     </div>
   );
 };

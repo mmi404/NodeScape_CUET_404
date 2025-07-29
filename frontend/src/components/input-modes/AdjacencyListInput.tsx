@@ -8,9 +8,10 @@ import { toast } from 'sonner';
 interface AdjacencyListInputProps {
   onGraphGenerated: (nodes: Node[], edges: Edge[]) => void;
   disabled?: boolean;
+  isDirected?: boolean;
 }
 
-export const AdjacencyListInput = ({ onGraphGenerated, disabled = false }: AdjacencyListInputProps) => {
+export const AdjacencyListInput = ({ onGraphGenerated, disabled = false, isDirected = true }: AdjacencyListInputProps) => {
   const [adjList, setAdjList] = useState('A: B C\nB: D\nC: D\nD:');
 
   const generateGraph = () => {
@@ -50,7 +51,8 @@ export const AdjacencyListInput = ({ onGraphGenerated, disabled = false }: Adjac
               id: `${source}-${target}`,
               source,
               target,
-              type: 'graphEdge'
+              type: 'graphEdge',
+              data: { isDirected }
             });
           }
         }

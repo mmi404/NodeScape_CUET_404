@@ -28,6 +28,7 @@ const Index = () => {
   const [algorithm, setAlgorithm] = useState<'BFS' | 'DFS'>('BFS');
   const [startNode, setStartNode] = useState('A');
   const [speed, setSpeed] = useState(1000);
+  const [isDirected, setIsDirected] = useState(true);
 
   // Undo/Redo stacks
   const [undoStack, setUndoStack] = useState<{ nodes: Node[]; edges: Edge[] }[]>([]);
@@ -46,13 +47,14 @@ const Index = () => {
     resumeTraversal,
     stopTraversal,
     resetTraversal,
-  } = useGraphTraversal(nodes, edges);
+  } = useGraphTraversal(nodes, edges, isDirected);
 
   const [contextMenuVisible, setContextMenuVisible] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   const [contextMenuNodeId, setContextMenuNodeId] = useState<string | null>(null);
   const [isAddingEdge, setIsAddingEdge] = useState(false);
   const [edgeSourceNodeId, setEdgeSourceNodeId] = useState<string | null>(null);
+  const [classificationResult, setClassificationResult] = useState<any>(null);
 
   const onConnect = useCallback((params: Connection) => {
     // Save current state to undo stack before change
@@ -65,18 +67,21 @@ const Index = () => {
         toast.error('Cannot connect node to itself.');
         return eds;
       }
-      // Prevent duplicate edges
-      const exists = eds.some(
-        (e) =>
-          (e.source === params.source && e.target === params.target) ||
-          (e.source === params.target && e.target === params.source)
-      );
+      // Prevent duplicate edges based on graph type
+      const exists = eds.some((e) => {
+        if (isDirected) {
+          return e.source === params.source && e.target === params.target;
+        } else {
+          return (e.source === params.source && e.target === params.target) ||
+                 (e.source === params.target && e.target === params.source);
+        }
+      });
       if (exists) {
         toast.error('Edge already exists between these nodes.');
         return eds;
       }
       toast.success('Edge added successfully!');
-      return addEdge({ ...params, type: 'graphEdge' }, eds);
+      return addEdge({ ...params, type: 'graphEdge', data: { isDirected } }, eds);
     });
   }, [setEdges, nodes, edges]);
 
@@ -114,18 +119,21 @@ const Index = () => {
         setUndoStack((stack) => [...stack, { nodes, edges }]);
         setRedoStack([]); // Clear redo stack on new action
 
-        // Check for duplicate edges
-        const edgeExists = edges.some(
-          (e) =>
-            (e.source === edgeSourceNodeId && e.target === nodeId) ||
-            (e.source === nodeId && e.target === edgeSourceNodeId)
-        );
+        // Check for duplicate edges based on graph type
+        const edgeExists = edges.some((e) => {
+          if (isDirected) {
+            return e.source === edgeSourceNodeId && e.target === nodeId;
+          } else {
+            return (e.source === edgeSourceNodeId && e.target === nodeId) ||
+                   (e.source === nodeId && e.target === edgeSourceNodeId);
+          }
+        });
         
         if (edgeExists) {
           toast.error('Edge already exists between these nodes.');
         } else {
           // Add edge from source to this node
-          setEdges((eds) => addEdge({ id: edgeSourceNodeId + '-' + nodeId, source: edgeSourceNodeId, target: nodeId, type: 'graphEdge' }, eds));
+          setEdges((eds) => addEdge({ id: edgeSourceNodeId + '-' + nodeId, source: edgeSourceNodeId, target: nodeId, type: 'graphEdge', data: { isDirected } }, eds));
           toast.success('Edge added from ' + edgeSourceNodeId + ' to ' + nodeId);
         }
       } else {
@@ -281,20 +289,59 @@ const Index = () => {
   }, [nodes.length, setNodes]);
 
   const handleGraphGenerated = useCallback((newNodes: Node[], newEdges: Edge[]) => {
+    console.log('Received newNodes:', newNodes);
+    console.log('Received newEdges:', newEdges);
+
     // Save current state to undo stack before change
     setUndoStack((stack) => [...stack, { nodes: [...nodes], edges: [...edges] }]);
     setRedoStack([]); // Clear redo stack on new action
-    
-    setNodes(newNodes);
-    setEdges(newEdges);
-    
+
+    // Transform backend nodes to ReactFlow nodes with position and type
+    const transformedNodes = newNodes.map((node, index) => {
+      const cols = Math.ceil(Math.sqrt(newNodes.length));
+      const spacing = 150;
+      const startX = 100;
+      const startY = 100;
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      return {
+        id: node.id,
+        type: 'graphNode',
+        position: {
+          x: startX + col * spacing,
+          y: startY + row * spacing,
+        },
+        data: { label: (node as any).label ?? node.id },
+      };
+    });
+
+    console.log('Transformed nodes:', transformedNodes);
+
+    // Transform backend edges to ReactFlow edges with id and type
+    const transformedEdges = newEdges.map((edge) => ({
+      id: `${edge.source}-${edge.target}`,
+      source: edge.source,
+      target: edge.target,
+      type: 'graphEdge',
+      data: { isDirected },
+    }));
+
+    console.log('Transformed edges:', transformedEdges);
+
+    setNodes(transformedNodes);
+    setEdges(transformedEdges);
+
     // Set start node to first node if available
-    if (newNodes.length > 0) {
-      setStartNode(newNodes[0].id);
+    if (transformedNodes.length > 0) {
+      setStartNode(transformedNodes[0].id);
     }
   }, [nodes, edges, setNodes, setEdges]);
 
   const availableNodes = nodes.map(node => node.id);
+
+  const handleClassificationResult = useCallback((result: any) => {
+    setClassificationResult(result);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background p-4" onClick={handleCloseContextMenu}>
@@ -314,12 +361,14 @@ const Index = () => {
             <GraphInputPanel 
               onGraphGenerated={handleGraphGenerated}
               disabled={isRunning}
+              isDirected={isDirected}
             />
           </div>
           <div className="lg:col-span-1">
             <GraphExamples 
               onLoadExample={handleGraphGenerated}
               disabled={isRunning}
+              isDirected={isDirected}
             />
           </div>
         </div>
@@ -349,6 +398,8 @@ const Index = () => {
               renderGraphControlsOnly={true}
               nodes={nodes}
               edges={edges}
+              isDirected={isDirected}
+              onDirectedChange={setIsDirected}
             />
           </div>
 
@@ -365,6 +416,7 @@ const Index = () => {
               currentNode={currentNode}
               visitedNodes={visitedNodes}
               queuedNodes={queuedNodes}
+              isDirected={isDirected}
             />
           </div>
 
@@ -391,6 +443,9 @@ const Index = () => {
               renderGraphControlsOnly={false}
               nodes={nodes}
               edges={edges}
+              onClassificationResult={handleClassificationResult}
+              isDirected={isDirected}
+              onDirectedChange={setIsDirected}
             />
           </div>
 

@@ -9,6 +9,8 @@ import {
   Node,
   NodeChange,
   EdgeChange,
+  useReactFlow,
+  addEdge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { GraphNode } from './GraphNode';
@@ -33,6 +35,7 @@ interface GraphCanvasProps {
   currentNode?: string;
   visitedNodes: string[];
   queuedNodes: string[];
+  isDirected?: boolean;
 }
 
 export const GraphCanvas = ({
@@ -46,10 +49,11 @@ export const GraphCanvas = ({
   currentNode,
   visitedNodes,
   queuedNodes,
+  isDirected = true,
 }: GraphCanvasProps) => {
   const reactFlowWrapperRef = useRef<HTMLDivElement>(null);
+  const reactFlowInstance = useRef<any>(null);
 
-  // Update node styles based on traversal state
   const styledNodes = nodes.map((node) => ({
     ...node,
     data: {
@@ -60,15 +64,17 @@ export const GraphCanvas = ({
     },
   }));
 
-  // Update edge styles based on traversal state
   const styledEdges = edges.map((edge) => ({
     ...edge,
+    type: 'graphEdge',
     data: {
       ...edge.data,
       isActive: currentNode === edge.source || currentNode === edge.target,
       isVisited: visitedNodes.includes(edge.source) && visitedNodes.includes(edge.target),
+      isDirected: edge.data?.isDirected ?? isDirected,
     },
     animated: currentNode === edge.source || currentNode === edge.target,
+
   }));
 
   const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
@@ -83,14 +89,22 @@ export const GraphCanvas = ({
     }
   }, [onContextMenu]);
 
-  // Auto-fit view when nodes change
-  const reactFlowInstance = useRef<any>(null);
-  
   const onInit = useCallback((instance: any) => {
     reactFlowInstance.current = instance;
   }, []);
 
-  // Fit view when nodes change
+
+
+  // 📤 Extract and log graph structure
+  useEffect(() => {
+    const nodeIds = nodes.map((n) => n.id);
+    const edgeList = edges.map((e) => [e.source, e.target]);
+    const edgeString = JSON.stringify(edgeList);
+    console.log('Node IDs:', nodeIds);
+    console.log('Edges:', edgeList);
+    console.log('Edge String:', edgeString);
+  }, [nodes, edges]);
+
   useEffect(() => {
     if (reactFlowInstance.current && nodes.length > 0) {
       setTimeout(() => {
@@ -122,13 +136,12 @@ export const GraphCanvas = ({
         zoomOnDoubleClick={true}
         panOnScroll={false}
         connectionMode="loose"
-
+        defaultEdgeOptions={{
+          type: 'graphEdge',
+          data: { isDirected },
+        }}
       >
-        <Background 
-          color="hsl(var(--border))" 
-          gap={20} 
-          size={1}
-        />
+        <Background color="hsl(var(--border))" gap={20} size={1} />
       </ReactFlow>
     </div>
   );

@@ -1,0 +1,22 @@
+[
+  {
+    "text": "make a circular graph of 6 nodes",
+    "type": "cyclic",
+    "nodes": 6
+  },
+  {
+    "text": "create a tree with 10 nodes",
+    "type": "tree",
+    "nodes": 10
+  },
+  {
+    "text": "generate a complete graph",
+    "type": "complete",
+    "nodes": null
+  },
+  {
+    "text": "draw a bipartite graph with 4 and 5 nodes",
+    "type": "bipartite",
+    "nodes": [4, 5]
+  }
+]

@@ -5,9 +5,10 @@ import { Node, Edge } from '@xyflow/react';
 interface GraphExamplesProps {
   onLoadExample: (nodes: Node[], edges: Edge[]) => void;
   disabled?: boolean;
+  isDirected?: boolean;
 }
 
-export const GraphExamples = ({ onLoadExample, disabled = false }: GraphExamplesProps) => {
+export const GraphExamples = ({ onLoadExample, disabled = false, isDirected = true }: GraphExamplesProps) => {
   const examples = {
     simple: {
       name: "Simple Path",
@@ -75,7 +76,8 @@ export const GraphExamples = ({ onLoadExample, disabled = false }: GraphExamples
       id: `${edge.source}-${edge.target}`,
       source: edge.source,
       target: edge.target,
-      type: 'graphEdge'
+      type: 'graphEdge',
+      data: { isDirected }
     }));
 
     onLoadExample(nodes, edges);

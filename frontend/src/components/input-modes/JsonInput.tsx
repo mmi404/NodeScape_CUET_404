@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 interface JsonInputProps {
   onGraphGenerated: (nodes: Node[], edges: Edge[]) => void;
   disabled?: boolean;
+  isDirected?: boolean;
 }
 
 interface GraphJson {
@@ -16,7 +17,7 @@ interface GraphJson {
   edges: Array<{ from: string; to: string; source?: string; target?: string }>;
 }
 
-export const JsonInput = ({ onGraphGenerated, disabled = false }: JsonInputProps) => {
+export const JsonInput = ({ onGraphGenerated, disabled = false, isDirected = true }: JsonInputProps) => {
   const [jsonInput, setJsonInput] = useState(`{
   "directed": false,
   "nodes": [
@@ -92,7 +93,8 @@ export const JsonInput = ({ onGraphGenerated, disabled = false }: JsonInputProps
           id: `${source}-${target}`,
           source,
           target,
-          type: 'graphEdge'
+          type: 'graphEdge',
+          data: { isDirected: data.directed ?? isDirected }
         };
       });
 

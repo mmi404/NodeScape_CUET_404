@@ -8,7 +8,7 @@ interface TraversalStep {
   step: number;
 }
 
-export const useGraphTraversal = (nodes: Node[], edges: Edge[]) => {
+export const useGraphTraversal = (nodes: Node[], edges: Edge[], isDirected: boolean = false) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [visitedNodes, setVisitedNodes] = useState<string[]>([]);
   const [queuedNodes, setQueuedNodes] = useState<string[]>([]);
@@ -21,7 +21,7 @@ export const useGraphTraversal = (nodes: Node[], edges: Edge[]) => {
   const stepIndexRef = useRef(0);
 
   // Build adjacency list from edges
-  const buildAdjacencyList = useCallback(() => {
+  const buildAdjacencyList = useCallback((isDirected: boolean = false) => {
     const adjacencyList: Record<string, string[]> = {};
     
     nodes.forEach(node => {
@@ -30,15 +30,18 @@ export const useGraphTraversal = (nodes: Node[], edges: Edge[]) => {
 
     edges.forEach(edge => {
       adjacencyList[edge.source].push(edge.target);
-      adjacencyList[edge.target].push(edge.source); // Undirected graph
+      // For undirected graphs, add reverse edge
+      if (!isDirected && !(edge.data?.isDirected ?? false)) {
+        adjacencyList[edge.target].push(edge.source);
+      }
     });
 
     return adjacencyList;
   }, [nodes, edges]);
 
   // Generate BFS traversal steps
-  const generateBFSSteps = useCallback((startNodeId: string): TraversalStep[] => {
-    const adjacencyList = buildAdjacencyList();
+  const generateBFSSteps = useCallback((startNodeId: string, isDirected: boolean = false): TraversalStep[] => {
+    const adjacencyList = buildAdjacencyList(isDirected);
     const visited = new Set<string>();
     const queue = [startNodeId];
     const steps: TraversalStep[] = [];
@@ -69,8 +72,8 @@ export const useGraphTraversal = (nodes: Node[], edges: Edge[]) => {
   }, [buildAdjacencyList]);
 
   // Generate DFS traversal steps
-  const generateDFSSteps = useCallback((startNodeId: string): TraversalStep[] => {
-    const adjacencyList = buildAdjacencyList();
+  const generateDFSSteps = useCallback((startNodeId: string, isDirected: boolean = false): TraversalStep[] => {
+    const adjacencyList = buildAdjacencyList(isDirected);
     const visited = new Set<string>();
     const stack = [startNodeId];
     const steps: TraversalStep[] = [];
@@ -104,12 +107,12 @@ export const useGraphTraversal = (nodes: Node[], edges: Edge[]) => {
   }, [buildAdjacencyList]);
 
   // Start traversal
-  const startTraversal = useCallback((algorithm: 'BFS' | 'DFS', startNodeId: string, speed: number) => {
+  const startTraversal = useCallback((algorithm: 'BFS' | 'DFS', startNodeId: string, speed: number, isDirected: boolean = false) => {
     if (!nodes.find(node => node.id === startNodeId)) return;
 
     const traversalSteps = algorithm === 'BFS' 
-      ? generateBFSSteps(startNodeId)
-      : generateDFSSteps(startNodeId);
+      ? generateBFSSteps(startNodeId, isDirected)
+      : generateDFSSteps(startNodeId, isDirected);
 
     setSteps(traversalSteps);
     setCurrentStep(0);
@@ -213,7 +216,7 @@ export const useGraphTraversal = (nodes: Node[], edges: Edge[]) => {
     currentNode,
     isRunning,
     isPaused,
-    startTraversal,
+    startTraversal: (algorithm: 'BFS' | 'DFS', startNodeId: string, speed: number) => startTraversal(algorithm, startNodeId, speed, isDirected),
     pauseTraversal,
     resumeTraversal,
     stopTraversal,
