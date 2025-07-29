@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
@@ -83,6 +83,22 @@ export const GraphCanvas = ({
     }
   }, [onContextMenu]);
 
+  // Auto-fit view when nodes change
+  const reactFlowInstance = useRef<any>(null);
+  
+  const onInit = useCallback((instance: any) => {
+    reactFlowInstance.current = instance;
+  }, []);
+
+  // Fit view when nodes change
+  useEffect(() => {
+    if (reactFlowInstance.current && nodes.length > 0) {
+      setTimeout(() => {
+        reactFlowInstance.current.fitView({ padding: 0.2, duration: 300 });
+      }, 100);
+    }
+  }, [nodes.length]);
+
   return (
     <div className="w-full bg-card rounded-lg border border-border overflow-hidden" style={{ height: '70vh', minHeight: '500px' }}>
       <ReactFlow
@@ -93,9 +109,11 @@ export const GraphCanvas = ({
         onConnect={onConnect}
         onNodeClick={handleNodeClick}
         onNodeContextMenu={handleNodeContextMenu}
+        onInit={onInit}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
+        fitViewOptions={{ padding: 0.2 }}
         proOptions={{ hideAttribution: true }}
         style={{ background: 'hsl(var(--card))', width: '100%', height: '100%' }}
         zoomOnScroll={true}
@@ -103,6 +121,8 @@ export const GraphCanvas = ({
         zoomOnPinch={true}
         zoomOnDoubleClick={true}
         panOnScroll={false}
+        connectionMode="loose"
+
       >
         <Background 
           color="hsl(var(--border))" 

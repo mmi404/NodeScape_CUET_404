@@ -86,7 +86,7 @@ const Index = () => {
       return;
     }
     const previous = undoStack[undoStack.length - 1];
-    setUndoStack((stack) => stack.slice(0, stack.length - 1));
+    setUndoStack((stack) => stack.slice(0, -1));
     setRedoStack((stack) => [...stack, { nodes: [...nodes], edges: [...edges] }]);
     setNodes(previous.nodes);
     setEdges(previous.edges);
@@ -99,7 +99,7 @@ const Index = () => {
       return;
     }
     const next = redoStack[redoStack.length - 1];
-    setRedoStack((stack) => stack.slice(0, stack.length - 1));
+    setRedoStack((stack) => stack.slice(0, -1));
     setUndoStack((stack) => [...stack, { nodes: [...nodes], edges: [...edges] }]);
     setNodes(next.nodes);
     setEdges(next.edges);
@@ -107,25 +107,39 @@ const Index = () => {
   }, [redoStack, nodes, edges, setNodes, setEdges]);
 
   const handleNodeClick = useCallback((nodeId: string) => {
-    if (isAddingEdge) {
-      if (edgeSourceNodeId && edgeSourceNodeId !== nodeId) {
+    // If in edge-adding mode, handle edge creation
+    if (isAddingEdge && edgeSourceNodeId) {
+      if (edgeSourceNodeId !== nodeId) {
         // Save current state to undo stack before change
         setUndoStack((stack) => [...stack, { nodes, edges }]);
         setRedoStack([]); // Clear redo stack on new action
 
-        // Add edge from source to this node
-        setEdges((eds) => addEdge({ id: edgeSourceNodeId + '-' + nodeId, source: edgeSourceNodeId, target: nodeId, type: 'graphEdge' }, eds));
-        toast.success('Edge added from ' + edgeSourceNodeId + ' to ' + nodeId);
-        setIsAddingEdge(false);
-        setEdgeSourceNodeId(null);
+        // Check for duplicate edges
+        const edgeExists = edges.some(
+          (e) =>
+            (e.source === edgeSourceNodeId && e.target === nodeId) ||
+            (e.source === nodeId && e.target === edgeSourceNodeId)
+        );
+        
+        if (edgeExists) {
+          toast.error('Edge already exists between these nodes.');
+        } else {
+          // Add edge from source to this node
+          setEdges((eds) => addEdge({ id: edgeSourceNodeId + '-' + nodeId, source: edgeSourceNodeId, target: nodeId, type: 'graphEdge' }, eds));
+          toast.success('Edge added from ' + edgeSourceNodeId + ' to ' + nodeId);
+        }
       } else {
         toast.error('Cannot add edge to the same node.');
       }
-      setContextMenuVisible(false);
+      
+      // Always exit edge-adding mode after clicking
+      setIsAddingEdge(false);
+      setEdgeSourceNodeId(null);
       return;
     }
 
-    if (!isRunning && !isPaused) {
+    // Only set start node if not in edge-adding mode
+    if (!isAddingEdge && !isRunning && !isPaused) {
       setStartNode(nodeId);
       toast.info('Start node set to ' + nodeId);
     }
@@ -177,7 +191,7 @@ const Index = () => {
     setIsAddingEdge(true);
     setEdgeSourceNodeId(nodeId);
     setContextMenuVisible(false);
-    toast.info('Select a node to connect an edge from ' + nodeId);
+    toast.info('Click on another node to connect edge from ' + nodeId);
   }, []);
 
   const handleSetStartNode = useCallback((nodeId: string) => {
@@ -241,22 +255,24 @@ const Index = () => {
   const handleAddNode = useCallback(() => {
     const nodeId = generateNodeId(nodes.length);
     
-    // Dynamic spacing based on number of nodes
-    const totalNodes = nodes.length + 1;
-    const maxCols = Math.min(6, Math.ceil(Math.sqrt(totalNodes * 1.5)));
-    const spacing = Math.max(120, 600 / maxCols);
+    // Grid-based positioning
+    const cols = Math.ceil(Math.sqrt(nodes.length + 1));
+    const spacing = 150;
+    const startX = 100;
+    const startY = 100;
     
-    const index = nodes.length;
-    const row = Math.floor(index / maxCols);
-    const col = index % maxCols;
+    const row = Math.floor(nodes.length / cols);
+    const col = nodes.length % cols;
+    
+    const position = {
+      x: startX + col * spacing,
+      y: startY + row * spacing
+    };
     
     const newNode = {
       id: nodeId,
       type: 'graphNode',
-      position: { 
-        x: 100 + col * spacing, 
-        y: 100 + row * (spacing * 0.8) 
-      },
+      position,
       data: { label: nodeId },
     };
     

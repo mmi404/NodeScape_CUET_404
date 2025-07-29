@@ -1,9 +1,6 @@
 import React from 'react';
-import {
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuPortal,
-} from '@/components/ui/context-menu';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 interface NodeContextMenuProps {
   visible: boolean;
@@ -30,13 +27,6 @@ export const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
     return null;
   }
 
-  const style = {
-    position: 'fixed' as const,
-    top: position.y,
-    left: position.x,
-    zIndex: 1000,
-  };
-
   const handleDelete = () => {
     onDelete(nodeId);
     onClose();
@@ -58,13 +48,26 @@ export const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
   };
 
   return (
-    <ContextMenuPortal>
-      <ContextMenuContent style={style} onContextMenu={(e) => e.preventDefault()}>
-        <ContextMenuItem onSelect={handleDelete}>Delete Node</ContextMenuItem>
-        <ContextMenuItem onSelect={handleRename}>Rename Node</ContextMenuItem>
-        <ContextMenuItem onSelect={handleAddEdge}>Add Edge</ContextMenuItem>
-        <ContextMenuItem onSelect={handleSetStartNode}>Set as Start Node</ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenuPortal>
+    <div 
+      className="fixed z-50" 
+      style={{ top: position.y, left: position.x }}
+    >
+      <Card className="w-48 shadow-lg">
+        <CardContent className="p-2 space-y-1">
+          <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleDelete}>
+            Delete Node
+          </Button>
+          <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleRename}>
+            Rename Node
+          </Button>
+          {/* <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleAddEdge}>
+            Add Edge
+          </Button> */}
+          <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleSetStartNode}>
+            Set as Start Node
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
