@@ -6,3 +6,6 @@ networkx
 scikit-learn
 joblib
 pyspellchecker
+sentence-transformers
+torch
+transformers
