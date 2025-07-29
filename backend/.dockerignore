@@ -1,9 +1,15 @@
-__pycache__
+venv/
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
-env
+env/
+.env
+.venv/
+ENV/
+env.bak/
+venv.bak/
 pip-log.txt
 pip-delete-this-directory.txt
 .tox
